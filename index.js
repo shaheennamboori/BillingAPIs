@@ -8,6 +8,7 @@ const { json } = bodyParserPkg;
 const { connect, connection } = mongoosePkg;
 const app = express();
 const PORT = 3000;
+const MongoDB_URI = "mongodb://127.0.0.1:27017/billing-software";
 
 // Middleware
 app.use(json());
@@ -21,7 +22,7 @@ app.get("/", async (req, res) => {
 
 // MongoDB connection
 // Start server only when we have valid connection
-connect("mongodb://127.0.0.1:27017/billing-software")
+connect(MongoDB_URI)
   .then(() => {
     try {
       // Start server
