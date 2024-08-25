@@ -7,7 +7,23 @@ import OrderItem from "../models/OrderItem.js";
 
 const router = Router();
 
-// GET all items
+/**
+ * @openapi
+ * '/api/foods':
+ *  get:
+ *     tags:
+ *     - Food Controller
+ *     summary: Get all food items
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *      400:
+ *        description: Bad Request
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
 router.get("/foods", async (req, res) => {
   try {
     const items = await Food.find().populate("category");
@@ -17,7 +33,103 @@ router.get("/foods", async (req, res) => {
   }
 });
 
-// GET all categories
+/**
+ * @openapi
+ * '/api/food':
+ *  post:
+ *     tags:
+ *     - Food Controller
+ *     summary: Create a food item
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *           schema:
+ *            type: object
+ *            required:
+ *              - name
+ *              - categoryId
+ *              - cost
+ *              - description
+ *            properties:
+ *              name:
+ *                type: string
+ *                default: food1
+ *              categoryId:
+ *                type: string
+ *                default: categoryID
+ *              cost:
+ *                type: number
+ *                default: 10
+ *              description:
+ *                type: string
+ *                default: description
+ *     responses:
+ *      201:
+ *        description: Created
+ *      409:
+ *        description: Conflict
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
+router.post("/food", async (req, res) => {
+  const item = new Food({
+    name: req.body.name,
+    description: req.body.description,
+    cost: req.body.cost,
+    category: req.body.categoryId,
+  });
+
+  try {
+    const newItem = await item.save();
+    res.status(201).json(newItem);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * '/api/categories':
+ *  get:
+ *     tags:
+ *     - Category Controller
+ *     summary: Get all categories
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *        content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                     description: The unique identifier for the food item.
+ *                   name:
+ *                     type: string
+ *                     description: The name of the food item.
+ *                   category:
+ *                     type: object
+ *                     description: The category to which the food item belongs.
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         description: The unique identifier for the category.
+ *                       name:
+ *                         type: string
+ *                         description: The name of the category.
+ *      400:
+ *        description: Bad Request
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
 router.get("/categories", async (req, res) => {
   try {
     const categories = await Category.find();
@@ -27,7 +139,65 @@ router.get("/categories", async (req, res) => {
   }
 });
 
-// GET all tables
+/**
+ * @openapi
+ * '/api/category':
+ *  post:
+ *     tags:
+ *     - Category Controller
+ *     summary: Create a category
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *           schema:
+ *            type: object
+ *            required:
+ *              - name
+ *            properties:
+ *              name:
+ *                type: string
+ *                default: category1
+ *     responses:
+ *      201:
+ *        description: Created
+ *      409:
+ *        description: Conflict
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
+router.post("/category", async (req, res) => {
+  try {
+    const category = new Category({
+      name: req.body.name,
+    });
+
+    const updatedCategory = await category.save();
+    res.json(updatedCategory);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * '/api/tables':
+ *  get:
+ *     tags:
+ *     - Table Controller
+ *     summary: Get all tables
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *      400:
+ *        description: Bad Request
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
 router.get("/tables", async (req, res) => {
   try {
     const tables = await Table.find();
@@ -37,7 +207,38 @@ router.get("/tables", async (req, res) => {
   }
 });
 
-// GET all orders
+// Create a table
+router.post("/table", async (req, res) => {
+  try {
+    const table = new Table({
+      name: req.body.name,
+      capacity: req.body.capacity,
+    });
+
+    const updatedTable = await table.save();
+    res.json(updatedTable);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * '/api/orders':
+ *  get:
+ *     tags:
+ *     - Order Controller
+ *     summary: Get all orders
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *      400:
+ *        description: Bad Request
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
 router.get("/orders", async (req, res) => {
   try {
     const orders = await Order.find();
@@ -71,55 +272,6 @@ router.get("/order-items/:tableId", async (req, res) => {
     res.json(orderItems);
   } catch (err) {
     res.status(500).json({ message: err.message });
-  }
-});
-
-// Create a category
-router.post("/category", async (req, res) => {
-  try {
-    const category = new Category({
-      name: req.body.name,
-    });
-
-    const updatedCategory = await category.save();
-    res.json(updatedCategory);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// Create a table
-router.post("/table", async (req, res) => {
-  try {
-    const table = new Table({
-      name: req.body.name,
-      capacity: req.body.capacity,
-    });
-
-    const updatedTable = await table.save();
-    res.json(updatedTable);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// POST create an item within a category
-router.post("/items", async (req, res) => {
-  const category = await Category.findById(req.body.categoryId);
-  if (!category) return res.status(404).json({ message: "Category not found" });
-
-  const item = new Food({
-    name: req.body.name,
-    description: req.body.description,
-    cost: req.body.cost,
-    category: req.body.categoryId,
-  });
-
-  try {
-    const newItem = await item.save();
-    res.status(201).json(newItem);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
   }
 });
 
