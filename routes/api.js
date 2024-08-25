@@ -6,7 +6,7 @@ import Order from "../models/Order.js";
 import OrderItem from "../models/OrderItem.js";
 
 const router = Router();
-
+// Food Controller
 /**
  * @openapi
  * '/api/foods':
@@ -90,6 +90,7 @@ router.post("/food", async (req, res) => {
   }
 });
 
+// Category Controller
 /**
  * @openapi
  * '/api/categories':
@@ -181,6 +182,7 @@ router.post("/category", async (req, res) => {
   }
 });
 
+// Table Controller
 /**
  * @openapi
  * '/api/tables':
@@ -207,7 +209,83 @@ router.get("/tables", async (req, res) => {
   }
 });
 
-// Create a table
+/**
+ * @openapi
+ * '/api/table/{tableId}/orders':
+ *  get:
+ *     tags:
+ *     - Table Controller
+ *     summary: Get all orders for the given table Id
+ *     parameters:
+ *     - in: path
+ *       name: tableId
+ *       required: true
+ *       schema:
+ *         type: string
+ *       description: The ID of the table
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *      400:
+ *        description: Bad Request
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
+router.get("/table/:tableId/orders", async (req, res) => {
+  try {
+    const orders = await Order.find({ table: req.params.tableId }).populate(
+      "table"
+    );
+    const orderIds = orders.map((order) => order._id);
+    const orderItems = await OrderItem.find({ order: { $in: orderIds } })
+      .populate("food")
+      .populate({
+        path: "food",
+        populate: {
+          path: "category", // Populate the category inside the food reference
+        },
+      });
+    res.json(orderItems);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * '/api/table':
+ *  post:
+ *     tags:
+ *     - Table Controller
+ *     summary: Create a table
+ *     requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *           schema:
+ *            type: object
+ *            required:
+ *              - name
+ *              - capacity
+ *            properties:
+ *              name:
+ *                type: string
+ *                default: food1
+ *              capacity:
+ *                type: number
+ *                default: 10
+ *     responses:
+ *      201:
+ *        description: Created
+ *      409:
+ *        description: Conflict
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
 router.post("/table", async (req, res) => {
   try {
     const table = new Table({
@@ -222,6 +300,95 @@ router.post("/table", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * '/api/table/{tableId}/order':
+ *  post:
+ *    tags:
+ *    - Table Controller
+ *    summary: Create an order for a specific table
+ *    parameters:
+ *    - in: path
+ *      name: tableId
+ *      required: true
+ *      schema:
+ *        type: string
+ *      description: The ID of the table
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            required:
+ *              - foodItems
+ *            properties:
+ *              foodItems:
+ *                type: array
+ *                items:
+ *                  type: object
+ *                  required:
+ *                    - foodId
+ *                    - quantity
+ *                  properties:
+ *                    foodId:
+ *                      type: string
+ *                      description: The ID of the food item
+ *                    quantity:
+ *                      type: number
+ *                      description: The quantity of the food item
+ *                example:
+ *                  foodId: "abc123"
+ *                  quantity: 2
+ *    responses:
+ *      200:
+ *        description: Order created successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                type: object
+ *                properties:
+ *                  _id:
+ *                    type: string
+ *                    description: The ID of the order item
+ *                  order:
+ *                    type: string
+ *                    description: The ID of the order
+ *                  food:
+ *                    type: string
+ *                    description: The ID of the food item
+ *                  quantity:
+ *                    type: number
+ *                    description: The quantity of the food item
+ *      400:
+ *        description: Bad Request
+ *      500:
+ *        description: Server Error
+ */
+router.post("/table/:tableId/order", async (req, res) => {
+  try {
+    const order = new Order({
+      table: req.params.tableId,
+    });
+
+    const updatedOrder = await order.save();
+    const foodItems = req.body.foodItems.map((item) => {
+      return new OrderItem({
+        order: updatedOrder._id,
+        food: item.foodId,
+        quantity: item.quantity,
+      });
+    });
+    const insertedOrders = await OrderItem.insertMany(foodItems);
+    res.json(insertedOrders);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Order Controller
 /**
  * @openapi
  * '/api/orders':
@@ -248,25 +415,26 @@ router.get("/orders", async (req, res) => {
   }
 });
 
-// GET all order items
+/**
+ * @openapi
+ * '/api/order-items':
+ *  get:
+ *     tags:
+ *     - Order Controller
+ *     summary: Get all order items
+ *     responses:
+ *      200:
+ *        description: Fetched Successfully
+ *      400:
+ *        description: Bad Request
+ *      404:
+ *        description: Not Found
+ *      500:
+ *        description: Server Error
+ */
 router.get("/order-items", async (req, res) => {
   try {
     const orderItems = await OrderItem.find()
-      .populate("order")
-      .populate("food");
-    res.json(orderItems);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get an order item for the given table id
-router.get("/order-items/:tableId", async (req, res) => {
-  try {
-    const orderIds = await Order.find({ table: req.params.tableId })
-      .populate("table")
-      .map((t) => t._id);
-    const orderItems = await OrderItem.find({ order: { $in: orderIds } })
       .populate("order")
       .populate("food");
     res.json(orderItems);
