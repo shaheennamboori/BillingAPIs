@@ -15,6 +15,10 @@ const FoodSchema = new Schema({
     ref: "Category",
     required: true,
   },
+  isVeg: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 export default model("Food", FoodSchema);

@@ -5,9 +5,14 @@ const TableSchema = new Schema({
     type: String,
     required: true,
   },
+  price: Number,
   capacity: {
     type: Number,
     required: true,
+  },
+  isAvailable: {
+    type: Boolean,
+    default: true,
   },
 });
 

@@ -51,6 +51,7 @@ router.get("/foods", async (req, res) => {
  *              - categoryId
  *              - cost
  *              - description
+ *              - isVeg
  *            properties:
  *              name:
  *                type: string
@@ -64,6 +65,9 @@ router.get("/foods", async (req, res) => {
  *              description:
  *                type: string
  *                default: description
+ *              isVeg:
+ *                type: boolean
+ *                default: true
  *     responses:
  *      201:
  *        description: Created
@@ -80,6 +84,7 @@ router.post("/food", async (req, res) => {
     description: req.body.description,
     cost: req.body.cost,
     category: req.body.categoryId,
+    isVeg: req.body.isVeg,
   });
 
   try {
@@ -269,11 +274,19 @@ router.get("/table/:tableId/orders", async (req, res) => {
  *            required:
  *              - name
  *              - capacity
+ *              - isAvailable
+ *              - price
  *            properties:
  *              name:
  *                type: string
- *                default: food1
+ *                default: table1
  *              capacity:
+ *                type: number
+ *                default: 10
+ *              isAvailable:
+ *                type: boolean
+ *                default: true
+ *              price:
  *                type: number
  *                default: 10
  *     responses:
@@ -291,6 +304,8 @@ router.post("/table", async (req, res) => {
     const table = new Table({
       name: req.body.name,
       capacity: req.body.capacity,
+      isAvailable: req.body.isAvailable,
+      price: req.body.price || 0,
     });
 
     const updatedTable = await table.save();
